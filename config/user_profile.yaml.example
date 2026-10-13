@@ -1,0 +1,27 @@
+# コピーして user_profile.yaml を作成し、自分の値に置き換える。
+vault_path: ~/Obsidian
+editing_log_dir: 編集ログ
+first_person: 私
+note_intro: 日々の気づきを記録しています。
+podcast_urls:
+  youtube: https://example.com/my-youtube
+  spotify: https://example.com/my-spotify
+avatar:
+  reference_image: config/user_avatar.jpg
+  head_image: config/user_head_transparent.png
+  appearance: 任意のキャラクター設定
+  vehicle: 任意の乗り物
+  scene_constraints: 参照画像の特徴を維持する。
+  reference_gallery: ~/Pictures/eyecatches
+places:
+  usual_bathhouse: お気に入りの施設
+  favorite_sauna: お気に入りの場所
+business_topics:
+- 仕事の工夫
+- 制作
+threads_priority_topics:
+- 日常
+- 旅行
+- 制作
+x_business_persona: 本人の経歴・現在地・発信方針を記入する。
+instagram_preferences: 写真と文章のトーンを記入する。

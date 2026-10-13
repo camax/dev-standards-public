@@ -1,0 +1,66 @@
+#!/usr/bin/env bash
+set -u
+
+HOOK_NAME="pre-commit"
+LIB_LOG="$HOME/.config/git-hooks/lib/log.sh"
+
+if [ -f "$LIB_LOG" ]; then . "$LIB_LOG"; fi
+if ! declare -f log_record >/dev/null 2>&1; then log_record() { :; }; fi
+
+if git config --local --get core.hooksPath >/dev/null 2>&1; then
+    log_record "$HOOK_NAME" "local_hooks_path_check" "WARN" "Local core.hooksPath is set and may conflict."
+fi
+
+STAGED="$(git diff --cached --name-only 2>/dev/null || true)"
+if [ -n "$STAGED" ]; then
+    TEST_PATTERN='(^|/)(tests?|__tests__|spec)(/|$)|[Tt]ests?\.[A-Za-z]+$|_test\.[A-Za-z]+$|\.test\.[A-Za-z]+$'
+    SOURCE_EXT_PATTERN='\.(swift|ts|tsx|js|jsx|py|go|rb|java|kt|kts|dart|rs|c|cc|cpp|h|hpp|m|mm|cs|php|scala|sh)$'
+    # [2026-10-08 ADD] 配布済みの第三者コードはテスト変更の対象外にする。
+    VENDOR_PATTERN='(^|/)(vendor|third_party|third-party|node_modules)/|^\.obsidian/plugins/obsidian-local-rest-api/'
+
+    HAS_TEST=0
+    HAS_SOURCE_WITHOUT_TEST=0
+
+    while IFS= read -r f; do
+      [ -z "$f" ] && continue
+      if printf '%s' "$f" | grep -qE "$VENDOR_PATTERN"; then
+        continue
+      elif printf '%s' "$f" | grep -qiE "$TEST_PATTERN"; then
+        HAS_TEST=1
+      elif printf '%s' "$f" | grep -qE "$SOURCE_EXT_PATTERN"; then
+        HAS_SOURCE_WITHOUT_TEST=1
+      fi
+    done <<< "$STAGED"
+
+    if [ "$HAS_SOURCE_WITHOUT_TEST" -eq 1 ] && [ "$HAS_TEST" -eq 0 ]; then
+        log_record "$HOOK_NAME" "harness_engineering" "FAIL" "Source changes without test changes."
+        echo "Harness Engineering違反: コミットをブロックしました" >&2
+        exit 1
+    fi
+    log_record "$HOOK_NAME" "harness_engineering" "PASS" "Tests verified or no source changes."
+else
+    log_record "$HOOK_NAME" "harness_engineering" "PASS" "No staged files."
+fi
+
+ROOT_DIR=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
+TARGET_HOOK=""
+if [ -x "$ROOT_DIR/.harness/hooks/$HOOK_NAME" ]; then
+    TARGET_HOOK="$ROOT_DIR/.harness/hooks/$HOOK_NAME"
+elif [ -x "$ROOT_DIR/.git/hooks/$HOOK_NAME" ]; then
+    TARGET_HOOK="$ROOT_DIR/.git/hooks/$HOOK_NAME"
+fi
+
+if [ -n "$TARGET_HOOK" ]; then
+    EXIT_CODE=0
+    "$TARGET_HOOK" "$@" || EXIT_CODE=$?
+    if [ $EXIT_CODE -eq 0 ]; then
+        log_record "$HOOK_NAME" "local_hook_dispatch" "PASS" "Dispatched to $TARGET_HOOK successfully. (exit 0)"
+        exit 0
+    else
+        log_record "$HOOK_NAME" "local_hook_dispatch" "FAIL" "Dispatched hook $TARGET_HOOK failed. (exit $EXIT_CODE)"
+        exit $EXIT_CODE
+    fi
+else
+    log_record "$HOOK_NAME" "local_hook_dispatch" "SKIP" "No local hook found."
+    exit 0
+fi

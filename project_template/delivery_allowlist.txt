@@ -1,0 +1,8 @@
+# 納品許可リスト — .agent/scripts/sync_to_delivery.sh が読む（git_safety.md 4.1）
+#
+# 記法:
+#   - 1行に1パターン。git管理下のファイルパスにマッチするグロブ（* は / をまたいで一致する）
+#   - 行頭に ! を付けると除外パターン
+#   - # 以降はコメント
+#
+# 記入済みの実例: HC_Project リポジトリの .agent/delivery_allowlist.txt を参照
