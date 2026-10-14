@@ -1,6 +1,6 @@
 # 出典追跡（Lineage JSON）と多段階Fact Check仕様（Phase 1）
 
-自動パイプライン実行時（または構造化出力要求時）は、テキスト出力に加えて以下のLineage JSONを出力し、機械的検証（`verify_lineage.py`）およびSQLite（`sns_operations.db`）へ永続化する：
+自動パイプライン実行時（または構造化出力要求時）は、テキスト出力に加えて以下のLineage JSONを出力し、機械的検証（※`verify_lineage.py` は未実装のため、現在は手動・エージェントによる照合を実施）およびSQLite（`sns_operations.db`）へ永続化する：
 
 ```json
 {
