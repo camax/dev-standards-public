@@ -339,8 +339,11 @@ fi
 FETCH_INFO="記録なし"
 if [ -f "$(git rev-parse --git-dir)/FETCH_HEAD" ]; then
   fh="$(git rev-parse --git-dir)/FETCH_HEAD"
-  fetch_epoch="$(stat -f %m "$fh" 2>/dev/null || stat -c %Y "$fh" 2>/dev/null || echo "")"
-  if [ -n "$fetch_epoch" ]; then
+  # [2026-10-15 FIX] GNU stat の -f 失敗時の標準出力を日時の数値に混入させない。
+  if ! fetch_epoch="$(stat -f %m "$fh" 2>/dev/null)"; then
+    fetch_epoch="$(stat -c %Y "$fh" 2>/dev/null || echo "")"
+  fi
+  if is_uint "$fetch_epoch"; then
     FETCH_INFO="$(date -r "$fetch_epoch" '+%Y-%m-%d %H:%M' 2>/dev/null || date -d "@$fetch_epoch" '+%Y-%m-%d %H:%M' 2>/dev/null || echo "$fetch_epoch")（$(( (NOW - fetch_epoch) / 86400 )) 日前）"
   fi
 fi

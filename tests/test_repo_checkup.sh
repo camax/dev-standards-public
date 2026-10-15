@@ -50,7 +50,7 @@ expect_not_contains() {
 }
 
 expect_rc() { # $1: 期待終了コード, $2: 説明
-  if [ "$RC" -eq "$1" ]; then ok "$2 (exit $RC)"; else ng "$2 | exit $RC（期待 $1）| $OUT"; fi
+  if [ "$RC" -eq "$1" ]; then ok "$2 (exit $RC)"; else ng "$2 | exit ${RC}（期待 $1）| $OUT"; fi
 }
 
 # 作業ツリー（.git 以外）の全ファイルの内容・refs・status をまとめたスナップショット
@@ -186,6 +186,29 @@ expect_contains "索引に未掲載: \`skills/no_fm/SKILL.md\`" "未掲載スキ
 expect_contains "索引のリンク切れ: \`skills/ghost/SKILL.md\`" "リンク切れ"
 
 echo "=== オプション ==="
+# [2026-10-15 ADD] GNU stat は -f の失敗時にも標準出力を返すため、数値への混入を検証する。
+g fetch -q origin
+NATIVE_STAT="$(command -v stat)"
+mkdir -p "$TMP_DIR/gnu-stat"
+cat > "$TMP_DIR/gnu-stat/stat" <<'EOF'
+#!/usr/bin/env bash
+if [ "$1" = -f ]; then
+  printf '  File: "%s"\n' "$3"
+  exit 1
+fi
+if [ "$1" = -c ] && [ "$2" = %Y ]; then
+  if "$NATIVE_STAT" -c %Y "$3" 2>/dev/null; then exit 0; fi
+  exec "$NATIVE_STAT" -f %m "$3"
+fi
+exit 1
+EOF
+chmod +x "$TMP_DIR/gnu-stat/stat"
+export NATIVE_STAT
+PATH="$TMP_DIR/gnu-stat:$PATH" run --repo "$W" --no-remote
+expect_rc 0 "GNU stat の -f 失敗時の標準出力が混入しても異常終了しない"
+expect_contains "（0 日前）" "GNU stat の -c %Y で取得した fetch 時刻を表示"
+expect_not_contains 'File:' "stat の失敗時出力はレポートに混入しない"
+
 run --repo "$W" --no-remote
 expect_contains "| 4 | 長期間更新のない／リモートに無いリモートブランチ | 1 |" "--no-remote ではリモート存在確認をしない"
 expect_contains "リモート存在確認: 未確認（--no-remote）" "--no-remote の明記"
