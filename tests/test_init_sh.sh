@@ -126,4 +126,7 @@ done
 # 検知対象の名前自体をリポジトリに残さないため、文字列を分割して記述する
 grep -q 'HC_''Project' "$INIT_SCRIPT" && fail "init.sh に特定の案件名が残っている"
 
+# 対話プロンプトの 1 番は汎用スタック(other)であること
+grep -q '1) STACK=other' "$INIT_SCRIPT" || fail "init.sh: 対話プロンプトの 1 番が other ではない"
+
 echo "test_init_sh: PASSED"

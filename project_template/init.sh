@@ -71,13 +71,13 @@ esac
 if [ -z "$STACK" ]; then
   if [ -t 0 ]; then
     echo "技術スタックを選んでください:"
-    echo "  1) kintone-gas  (Kintone + GAS)"
-    echo "  2) other        (それ以外)"
+    echo "  1) other        (汎用。特定スタック向けの追加ルールなし)"
+    echo "  2) kintone-gas  (Kintone + GAS 向けの追加ルールを含める)"
     printf "番号を入力 (1/2): "
     read -r ans2
     case "$ans2" in
-      1) STACK=kintone-gas ;;
-      2) STACK=other ;;
+      1) STACK=other ;;
+      2) STACK=kintone-gas ;;
       *) echo "ERROR: 不正な選択です。" >&2; exit 1 ;;
     esac
   else
