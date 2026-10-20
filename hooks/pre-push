@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+set -u
+
+HOOK_NAME="pre-push"
+LIB_LOG="$HOME/.config/git-hooks/lib/log.sh"
+
+if [ -f "$LIB_LOG" ]; then . "$LIB_LOG"; fi
+if ! declare -f log_record >/dev/null 2>&1; then log_record() { :; }; fi
+
+if git config --local --get core.hooksPath >/dev/null 2>&1; then
+    log_record "$HOOK_NAME" "local_hooks_path_check" "WARN" "Local core.hooksPath is set."
+fi
+
+log_record "$HOOK_NAME" "common_checks" "PASS" "No common checks for pre-push."
+
+ROOT_DIR=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
+TARGET_HOOK=""
+if [ -x "$ROOT_DIR/.harness/hooks/$HOOK_NAME" ]; then
+    TARGET_HOOK="$ROOT_DIR/.harness/hooks/$HOOK_NAME"
+elif [ -x "$ROOT_DIR/.git/hooks/$HOOK_NAME" ]; then
+    TARGET_HOOK="$ROOT_DIR/.git/hooks/$HOOK_NAME"
+fi
+
+if [ -n "$TARGET_HOOK" ]; then
+    EXIT_CODE=0
+    INPUT=$(cat)
+    
+    if [ -n "$INPUT" ]; then
+        echo "$INPUT" | "$TARGET_HOOK" "$@" || EXIT_CODE=$?
+    else
+        "$TARGET_HOOK" "$@" < /dev/null || EXIT_CODE=$?
+    fi
+    
+    if [ $EXIT_CODE -eq 0 ]; then
+        log_record "$HOOK_NAME" "local_hook_dispatch" "PASS" "Dispatched to $TARGET_HOOK successfully. (exit 0)"
+        exit 0
+    else
+        log_record "$HOOK_NAME" "local_hook_dispatch" "FAIL" "Dispatched hook $TARGET_HOOK failed. (exit $EXIT_CODE)"
+        exit $EXIT_CODE
+    fi
+else
+    cat >/dev/null
+    log_record "$HOOK_NAME" "local_hook_dispatch" "SKIP" "No local hook found."
+    exit 0
+fi
